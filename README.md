@@ -23,7 +23,7 @@ index, and makes cleanup mechanical.
 ## Install
 
 ```bash
-git clone https://github.com/<you>/claude-deskbook
+git clone https://github.com/uddish/claude-deskbook
 claude
 > /plugin marketplace add ./claude-deskbook
 > /plugin install deskbook
