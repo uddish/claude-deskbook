@@ -1,0 +1,13 @@
+{
+	"name": "deskbook",
+	"description": "Deskbook — organise Claude Code work notes, worktrees and sessions across projects.",
+	"owner": {
+		"name": "Uddish Verma"
+	},
+	"plugins": [
+		{
+			"name": "deskbook",
+			"source": "./"
+		}
+	]
+}

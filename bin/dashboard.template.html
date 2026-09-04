@@ -1,0 +1,662 @@
+<title>Deskbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --ground:#f4f6f8; --panel:#fff; --panel-2:#fafbfc;
+  --ink:#14171c; --ink-soft:#4e5661; --ink-faint:#79818d;
+  --rule:#e3e7eb; --rule-soft:#eef1f4;
+  --accent:#1c5fd8; --accent-soft:#eaf0fd;
+  --s-active:#0f7548; --s-blocked:#a8480f; --s-parked:#5f6772; --s-done:#818a96;
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root:not([data-theme="light"]) { }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:#191d23; --panel:#21262e; --panel-2:#1c2128;
+    --ink:#f2f4f7; --ink-soft:#b6bec9; --ink-faint:#8f98a4;
+    --rule:#333b46; --rule-soft:#272d36;
+    --accent:#93bbff; --accent-soft:#22304a;
+    --s-active:#54d79b; --s-blocked:#f0a163; --s-parked:#a3acb8; --s-done:#8f98a4;
+  }
+}
+:root[data-theme="dark"] {
+  --ground:#191d23; --panel:#21262e; --panel-2:#1c2128;
+  --ink:#f2f4f7; --ink-soft:#b6bec9; --ink-faint:#8f98a4;
+  --rule:#333b46; --rule-soft:#272d36;
+  --accent:#93bbff; --accent-soft:#22304a;
+  --s-active:#54d79b; --s-blocked:#f0a163; --s-parked:#a3acb8; --s-done:#8f98a4;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans);
+  font-size:15.5px; line-height:1.68; -webkit-font-smoothing:antialiased; }
+a { color:var(--accent); text-decoration:none; }
+a:hover { text-decoration:underline; }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:3px; }
+
+.masthead { position:sticky; top:0; z-index:10; background:var(--panel);
+  border-bottom:1px solid var(--rule); padding:14px 22px;
+  display:flex; align-items:baseline; gap:18px; flex-wrap:wrap; }
+.wordmark { font-weight:600; font-size:16px; letter-spacing:-0.01em; }
+.wordmark span { color:var(--ink-faint); font-family:var(--mono); font-weight:400;
+  font-size:11px; letter-spacing:0.08em; text-transform:uppercase; margin-left:9px; }
+.tallies { display:flex; gap:16px; margin-left:auto; font-family:var(--mono);
+  font-size:11.5px; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+.tallies b { color:var(--ink); font-weight:500; }
+.themer { border:1px solid var(--rule); background:var(--panel-2); color:var(--ink-soft);
+  font-family:var(--mono); font-size:11px; letter-spacing:0.04em; text-transform:uppercase;
+  border-radius:4px; padding:4px 9px; cursor:pointer; }
+.themer:hover { color:var(--ink); border-color:var(--ink-faint); }
+
+.shell { display:grid; grid-template-columns:290px minmax(0,1fr); align-items:start; }
+@media (max-width:860px) { .shell { grid-template-columns:1fr; } }
+
+.rail { position:sticky; top:57px; max-height:calc(100vh - 57px); overflow-y:auto;
+  background:var(--panel-2); border-right:1px solid var(--rule); padding:18px 0 40px; }
+@media (max-width:860px) { .rail { position:static; max-height:none; border-right:0;
+  border-bottom:1px solid var(--rule); } }
+.group { margin-bottom:22px; }
+.group > h2 { font-family:var(--mono); font-size:10.5px; letter-spacing:0.1em;
+  text-transform:uppercase; color:var(--ink-faint); font-weight:500;
+  margin:0 0 7px; padding:0 22px; display:flex; gap:7px; align-items:center; }
+.group > h2::after { content:""; flex:1; height:1px; background:var(--rule); }
+.pick { display:block; width:100%; text-align:left; border:0; background:none;
+  font-family:var(--sans); font-size:14px; color:var(--ink); cursor:pointer;
+  padding:7px 22px 7px 19px; border-left:3px solid transparent; line-height:1.35; }
+.pick:hover { background:var(--rule-soft); }
+.pick[aria-current="true"] { background:var(--accent-soft); border-left-color:var(--accent);
+  font-weight:500; }
+.pick .key { font-family:var(--mono); font-size:11px; color:var(--ink-faint);
+  display:block; margin-bottom:1px; }
+.pick[aria-current="true"] .key { color:var(--accent); }
+
+main { padding:30px 34px 90px; max-width:none; }
+@media (max-width:860px) { main { padding:22px 18px 60px; } }
+.doc { max-width:80ch; }
+.crest { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:5px; }
+.dot { width:7px; height:7px; border-radius:50%; flex:none; }
+.st { font-family:var(--mono); font-size:11px; letter-spacing:0.07em; text-transform:uppercase; }
+.st-active{color:var(--s-active)} .st-blocked{color:var(--s-blocked)}
+.st-parked{color:var(--s-parked)} .st-done{color:var(--s-done)}
+.st-reference{color:var(--accent)}
+.bg-active{background:var(--s-active)} .bg-blocked{background:var(--s-blocked)}
+.bg-parked{background:var(--s-parked)} .bg-done{background:var(--s-done)}
+.bg-reference{background:var(--accent)}
+.stamp { font-family:var(--mono); font-size:11px; color:var(--ink-faint);
+  font-variant-numeric:tabular-nums; }
+h1.name { font-size:26px; line-height:1.22; margin:0 0 12px; font-weight:600;
+  letter-spacing:-0.015em; text-wrap:balance; }
+.chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.chip { font-family:var(--mono); font-size:11px; color:var(--ink-soft);
+  border:1px solid var(--rule); border-radius:3px; padding:2px 7px; }
+.jumps { display:flex; gap:14px; flex-wrap:wrap; font-size:13px; margin-bottom:24px; }
+
+.sheet { background:var(--panel); border:1px solid var(--rule); border-radius:6px;
+  margin-bottom:16px; overflow:hidden; }
+.sheet > summary { cursor:pointer; padding:11px 16px; font-family:var(--mono);
+  font-size:12px; color:var(--ink-soft); display:flex; gap:10px; align-items:center;
+  list-style:none; }
+.sheet > summary::-webkit-details-marker { display:none; }
+.sheet > summary::before { content:"▸"; color:var(--ink-faint); font-size:10px; }
+.sheet[open] > summary::before { content:"▾"; }
+.sheet > summary:hover { background:var(--rule-soft); }
+.sheet > summary .fname { color:var(--ink); font-weight:500; }
+.sheet > summary .fsize { margin-left:auto; color:var(--ink-faint);
+  font-variant-numeric:tabular-nums; }
+.sheet .md { padding:4px 20px 20px; border-top:1px solid var(--rule-soft); }
+
+.md > :first-child { margin-top:14px; }
+.md h1,.md h2,.md h3,.md h4 { line-height:1.3; margin:26px 0 9px; font-weight:600;
+  letter-spacing:-0.008em; text-wrap:balance; }
+.md h1 { font-size:20px; } .md h2 { font-size:17px; }
+.md h3 { font-size:15px; } .md h4 { font-size:14px; color:var(--ink-soft); }
+.md p,.md li { margin:0 0 11px; }
+.md ul,.md ol { margin:0 0 12px; padding-left:22px; }
+.md li > ul,.md li > ol { margin-top:6px; }
+.md code { font-family:var(--mono); font-size:0.87em; background:var(--rule-soft);
+  border:1px solid var(--rule); border-radius:3px; padding:0.5px 4px; }
+.md pre { background:var(--panel-2); border:1px solid var(--rule); border-radius:5px;
+  padding:12px 14px; overflow-x:auto; margin:0 0 14px; }
+.md pre code { background:none; border:0; padding:0; font-size:13px; line-height:1.6; }
+.md blockquote { margin:0 0 14px; padding:2px 0 2px 14px;
+  border-left:2px solid var(--rule); color:var(--ink-soft); }
+.md hr { border:0; border-top:1px solid var(--rule); margin:22px 0; }
+.md .tw { overflow-x:auto; margin:0 0 16px; }
+.md table { border-collapse:collapse; font-size:14px; min-width:100%; }
+.md th,.md td { border:1px solid var(--rule); padding:7px 11px; text-align:left;
+  vertical-align:top; }
+.md th { background:var(--panel-2); font-weight:600; font-size:12px;
+  letter-spacing:0.01em; white-space:nowrap; }
+.md td { font-variant-numeric:tabular-nums; }
+.md img { max-width:100%; }
+
+.listing { border:1px solid var(--rule); border-radius:6px; background:var(--panel);
+  overflow:hidden; }
+.listing .row { display:flex; gap:12px; align-items:baseline; padding:9px 16px;
+  border-top:1px solid var(--rule-soft); font-size:13.5px; }
+.listing .row:first-child { border-top:0; }
+.listing .row .p { font-family:var(--mono); font-size:11.5px; color:var(--ink-faint);
+  margin-left:auto; }
+.hint { color:var(--ink-soft); font-size:13.5px; }
+
+.trees { border:1px solid var(--rule); border-radius:6px; background:var(--panel);
+  overflow:hidden; margin:0 0 18px; }
+.trees .tr { display:flex; gap:10px; align-items:center; padding:9px 14px;
+  border-top:1px solid var(--rule-soft); font-size:13px; flex-wrap:wrap; }
+.trees .tr:first-child { border-top:0; }
+.trees .br { font-family:var(--mono); font-size:12px; }
+.trees .pth { font-family:var(--mono); font-size:11px; color:var(--ink-faint);
+  margin-left:auto; display:flex; gap:8px; align-items:center; }
+.pathbtn { font-family:var(--mono); font-size:11px; color:var(--ink-faint);
+  background:none; border:0; border-bottom:1px dashed var(--rule); cursor:pointer;
+  padding:1px 0; }
+.pathbtn:hover { color:var(--accent); border-bottom-color:var(--accent); }
+.act.open { padding:3px 8px; font-size:10.5px; }
+.tag { font-family:var(--mono); font-size:10px; letter-spacing:0.06em;
+  text-transform:uppercase; border-radius:3px; padding:2px 6px; border:1px solid; }
+.tag.merged { color:var(--s-parked); border-color:var(--rule); }
+.tag.open { color:var(--s-active); border-color:currentColor; }
+.tag.draft { color:var(--ink-faint); border-color:var(--rule); }
+.tag.agent { color:var(--accent); border-color:var(--rule); }
+.tag.detached { color:var(--s-blocked); border-color:var(--rule); }
+.tag.main { color:var(--ink); border-color:var(--ink-faint); }
+.tag.ext { color:var(--ink-faint); border-color:var(--rule); }
+.cant { font-family:var(--mono); font-size:10.5px; color:var(--ink-faint); }
+.rowsaid { font-family:var(--mono); font-size:10.5px; color:var(--s-blocked); }
+.trpath { font-family:var(--mono); font-size:10.5px; color:var(--ink-faint);
+  padding:0 14px 9px; }
+
+.bar { display:flex; gap:7px; align-items:center; flex-wrap:wrap; margin:0 0 24px;
+  padding-bottom:18px; border-bottom:1px solid var(--rule); }
+.btn { font-family:var(--sans); font-size:13px; border:1px solid var(--rule);
+  background:var(--panel); color:var(--ink); border-radius:5px; padding:6px 12px;
+  cursor:pointer; display:inline-flex; gap:6px; align-items:center; line-height:1.2; }
+.btn:hover { border-color:var(--ink-faint); }
+.btn.primary { background:var(--accent); border-color:var(--accent); color:#fff;
+  font-weight:500; }
+.btn.primary:hover { filter:brightness(1.08); }
+.btn.sm { font-size:11.5px; padding:4px 9px; }
+.btn.warn:hover { color:#fff; background:#c0392b; border-color:#c0392b; }
+.btn .n { font-family:var(--mono); font-size:11px; opacity:0.75; }
+.btn:disabled { opacity:0.5; cursor:default; }
+.linkish { background:none; border:0; color:var(--ink-soft); font-family:var(--sans);
+  font-size:12.5px; cursor:pointer; padding:4px 2px; text-decoration:underline;
+  text-decoration-color:var(--rule); text-underline-offset:3px; }
+.linkish:hover { color:var(--accent); text-decoration-color:var(--accent); }
+.spacer { flex:1; }
+.danger { margin:44px 0 0; padding-top:16px; border-top:1px solid var(--rule);
+  display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.danger .hint { font-size:12px; }
+.said { color:var(--s-active); font-size:12px; font-family:var(--mono); }
+.local { font-family:var(--mono); font-size:10.5px; color:var(--ink-faint);
+  border:1px dashed var(--rule); border-radius:4px; padding:3px 8px; }
+.sub { font-family:var(--mono); font-size:11px; color:var(--ink-faint); padding:0 22px 6px; }
+</style>
+
+<div class="masthead">
+  <div class="wordmark">Deskbook<span>__GENERATED__</span></div>
+  <div class="tallies" id="tallies"></div>
+  <button class="themer" id="themer" type="button" aria-label="Change colour theme"></button>
+</div>
+
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Work items"></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const LABEL = { active:'Active', blocked:'Blocked', parked:'Parked', done:'Done', reference:'Reference' };
+
+/* ---------- markdown ---------- */
+const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function inline(s) {
+  return s
+    .replace(/`([^`]+)`/g, (_, c) => '<code>' + c + '</code>')
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^\w*])\*([^*\n]+)\*(?=[^\w*]|$)/g, '$1<em>$2</em>');
+}
+
+function md(src) {
+  if (!src) return '';
+  const lines = esc(src).split('\n');
+  const out = [];
+  let i = 0;
+  const cell = (row) => row.replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (/^```/.test(line)) {                                  // fenced code
+      const buf = [];
+      i++;
+      while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
+      i++;
+      out.push('<pre><code>' + buf.join('\n') + '</code></pre>');
+      continue;
+    }
+    if (/^\s*$/.test(line)) { i++; continue; }
+    if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+
+    const h = line.match(/^(#{1,6})\s+(.*)$/);               // heading
+    if (h) {
+      const n = Math.min(h[1].length, 4);
+      out.push('<h' + n + '>' + inline(h[2]) + '</h' + n + '>');
+      i++;
+      continue;
+    }
+    // table: a header row followed by a divider row
+    if (/\|/.test(line) && i + 1 < lines.length && /^\s*\|?[\s:-]*-[\s|:-]*$/.test(lines[i + 1])) {
+      const head = cell(line);
+      i += 2;
+      const rows = [];
+      while (i < lines.length && /\|/.test(lines[i]) && !/^\s*$/.test(lines[i])) rows.push(cell(lines[i++]));
+      out.push(
+        '<div class="tw"><table><thead><tr>' +
+          head.map((c) => '<th>' + inline(c) + '</th>').join('') +
+          '</tr></thead><tbody>' +
+          rows.map((r) => '<tr>' + r.map((c) => '<td>' + inline(c) + '</td>').join('') + '</tr>').join('') +
+          '</tbody></table></div>',
+      );
+      continue;
+    }
+    if (/^\s*>/.test(line)) {                                 // blockquote
+      const buf = [];
+      while (i < lines.length && /^\s*>/.test(lines[i])) buf.push(lines[i++].replace(/^\s*>\s?/, ''));
+      out.push('<blockquote>' + md(buf.join('\n')) + '</blockquote>');
+      continue;
+    }
+    const li = line.match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/);   // list
+    if (li) {
+      const ordered = /\d/.test(li[2]);
+      const items = [];
+      while (i < lines.length) {
+        const m = lines[i].match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/);
+        if (!m) {
+          if (/^\s+\S/.test(lines[i]) && items.length) { items[items.length - 1] += ' ' + lines[i].trim(); i++; continue; }
+          break;
+        }
+        items.push(m[3]);
+        i++;
+      }
+      const tag = ordered ? 'ol' : 'ul';
+      out.push('<' + tag + '>' + items.map((t) => '<li>' + inline(t) + '</li>').join('') + '</' + tag + '>');
+      continue;
+    }
+    const buf = [];                                           // paragraph
+    while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,6}\s|```|\s*>|\s*([-*+]|\d+[.)])\s)/.test(lines[i])) buf.push(lines[i++]);
+    out.push('<p>' + inline(buf.join(' ')) + '</p>');
+  }
+  return out.join('\n');
+}
+
+/* ---------- state ---------- */
+const ALL = [...DATA.work, ...DATA.reference, ...DATA.archive];
+const keyOf = (it) => it.area + '/' + it.slug;
+let current = null;
+try { current = localStorage.getItem('deskbook.pick'); } catch (e) {}
+if (current !== '::trees' && !ALL.some((it) => keyOf(it) === current)) current = ALL.length ? keyOf(ALL[0]) : null;
+
+const kb = (n) => (n < 1024 ? n + ' B' : (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB');
+
+function drawTallies() {
+  const n = (s) => DATA.work.filter((i) => i.status === s).length;
+  document.getElementById('tallies').innerHTML =
+    '<span><b>' + n('active') + '</b> active</span>' +
+    (n('blocked') ? '<span><b>' + n('blocked') + '</b> blocked</span>' : '') +
+    '<span><b>' + n('parked') + '</b> parked</span>' +
+    '<span><b>' + DATA.reference.length + '</b> reference</span>' +
+    '<span><b>' + DATA.archive.length + '</b> archived</span>';
+}
+
+function drawRail() {
+  const chunk = (title, items) => {
+    if (!items.length) return '';
+    return (
+      '<section class="group"><h2>' + title + '</h2>' +
+      items
+        .map(
+          (it) =>
+            '<button class="pick" data-key="' + keyOf(it) + '" aria-current="' + (keyOf(it) === current) + '">' +
+            (it.id ? '<span class="key">' + it.id + '</span>' : '') +
+            it.title +
+            '</button>',
+        )
+        .join('') +
+      '</section>'
+    );
+  };
+  const byStatus = (s) => DATA.work.filter((i) => i.status === s);
+  document.getElementById('rail').innerHTML =
+    chunk('Active', byStatus('active')) +
+    chunk('Blocked', byStatus('blocked')) +
+    chunk('Parked', byStatus('parked')) +
+    chunk('Reference', DATA.reference) +
+    chunk('Archive', DATA.archive) +
+    (DATA.worktrees && DATA.worktrees.length
+      ? '<section class="group"><h2>Repository</h2>' +
+        '<button class="pick" data-key="::trees" aria-current="' + (current === '::trees') + '">Worktrees' +
+        '</button><div class="sub">' + DATA.worktrees.length + ' checked out</div></section>'
+      : '');
+
+  document.querySelectorAll('.pick').forEach((b) =>
+    b.addEventListener('click', () => {
+      current = b.dataset.key;
+      try { localStorage.setItem('deskbook.pick', current); } catch (e) {}
+      drawRail();
+      drawDoc();
+      document.getElementById('main').scrollIntoView({ block: 'start' });
+    }),
+  );
+}
+
+function treePanel(list, heading, slug) {
+  if (!list || !list.length) return '';
+
+  const prTag = (w) => {
+    if (!w.branch) return '<span class="tag detached">detached</span>';
+    if (!w.pr) return '';
+    const st = w.pr.state.toLowerCase();
+    const cls = st === 'merged' ? 'merged' : st === 'open' ? 'open' : 'draft';
+    return '<span class="tag ' + cls + '">#' + w.pr.number + ' ' + st + '</span>';
+  };
+
+  // Only an agent worktree is ever offered for removal. The main checkout cannot be
+  // removed by git at all, and anything outside .claude/worktrees belongs to someone
+  // else's workflow.
+  const kindTag = (w) =>
+    w.main ? '<span class="tag main">main checkout</span>'
+    : w.agent ? '<span class="tag agent">agent</span>'
+    : '<span class="tag ext">outside .claude/worktrees</span>';
+
+  const removable = (w) => DATA.live && !w.main && w.agent;
+
+  const controls = (w) =>
+    DATA.live
+      ? '<button class="btn sm" data-act="reveal" data-path="' + esc(w.path) + '">folder</button>' +
+        '<button class="btn sm" data-act="claude" data-path="' + esc(w.path) + '" data-slug="' + esc(slug || '') + '">claude</button>' +
+        (removable(w)
+          ? '<button class="btn sm warn" data-act="worktree" data-path="' + esc(w.path) +
+            '" data-branch="' + esc(w.branch || '') +
+            '" data-pr="' + (w.pr ? esc(w.pr.state.toLowerCase() + ' #' + w.pr.number) : '') + '">remove</button>'
+          : '<span class="cant" title="' + (w.main ? 'git cannot remove the main working tree' : 'not an agent worktree') + '">no remove</span>')
+      : '<button class="pathbtn" data-path="' + esc(w.path) + '" title="Copy the full path">copy path</button>';
+
+  const sweepable = list.filter((w) => w.agent && !w.main && w.pr && w.pr.state.toLowerCase() === 'merged');
+  return (
+    '<h3 style="font-size:13px;margin:24px 0 8px;color:var(--ink-soft)">' + heading +
+    (DATA.live && sweepable.length
+      ? ' <button class="linkish" id="sweep">remove ' + sweepable.length + ' with a merged PR</button>'
+      : '') +
+    '</h3>' +
+    '<div class="trees">' +
+    list
+      .map(
+        (w, n) =>
+          '<div class="tr">' +
+          '<span class="br">' + esc(w.branch || w.head || '?') + '</span>' +
+          prTag(w) + kindTag(w) +
+          '<span class="pth">' + controls(w) + '<span class="rowsaid" id="rs' + n + '"></span></span>' +
+          '</div>' +
+          '<div class="trpath">' + esc(w.path.replace(/^.*\/\.claude\//, '.claude/')) + '</div>',
+      )
+      .join('') +
+    '</div>'
+  );
+}
+
+/** The same block `deskbook brief` prints, built from the data already on the page. */
+function briefText(it, short) {
+  const L = [];
+  L.push('# ' + it.title, '');
+  L.push('**Status:** ' + it.status + (it.id ? ' \u00b7 **Key:** ' + it.id : '') + ' \u00b7 **Updated:** ' + it.updated);
+  if (it.tags.length) L.push('**Tags:** ' + it.tags.join(', '));
+  L.push('');
+  if (it.links.length) { L.push('## Links', ''); it.links.forEach((l) => L.push('- ' + l.label + ': ' + l.url)); L.push(''); }
+  if (it.worktrees && it.worktrees.length) {
+    L.push('## Branches and worktrees', '');
+    it.worktrees.forEach((w) => L.push('- `' + w.branch + '`' + (w.pr ? ' \u2014 PR #' + w.pr.number + ' ' + w.pr.state.toLowerCase() : '')));
+    L.push('');
+  }
+  if (DATA.repo) L.push('**Repository:** ' + DATA.repo, '');
+  const docs = it.files.filter((f) => f.md !== null);
+  if (short) {
+    L.push('## Contents', '');
+    docs.forEach((f) => {
+      L.push('### ' + f.name, '');
+      const heads = f.md.split('\n').filter((l) => /^#{1,3}\s/.test(l)).slice(0, 25);
+      L.push(...(heads.length ? heads.map((h) => '- ' + h.replace(/^#+\s*/, '')) : ['_no headings_']), '');
+    });
+  } else {
+    docs.forEach((f) => L.push('---', '', '## ' + f.name, '', f.md.trimEnd(), ''));
+  }
+  L.push('---', '', '_Notes live at ' + (DATA.root || '?') + '/' + it.area + '/' + it.slug + ' on the original machine._');
+  return L.join('\n');
+}
+
+/**
+ * One primary action, not two similar ones: copying context for a new session is
+ * the common case, and the outline is a secondary variant behind a plain link.
+ * Folder, terminal and session actions need a real filesystem, so they only appear
+ * when the page is served locally.
+ */
+function actionBar(it) {
+  const size = (short) => {
+    const n = briefText(it, short).length;
+    return n < 1024 ? n + ' B' : Math.round(n / 1024) + ' KB';
+  };
+  const target = (it.worktrees && it.worktrees.length ? it.worktrees[0].path : DATA.repo) || '';
+  // A single-file item has no directory of its own, so reveal the file instead.
+  const notes = (DATA.root || '') + '/' + it.area + '/' + it.slug + (it.isDir ? '' : '.md');
+
+  // Folder means this item's own files — its notes, its tools, its collections.
+  // The Claude session belongs in the worktree, which is where the code is.
+  const live = DATA.live
+    ? '<button class="btn" data-act="reveal" data-path="' + esc(notes) + '"' +
+        ' title="Open ' + esc(notes) + '">Folder</button>' +
+      (target
+        ? '<button class="btn" data-act="claude" data-path="' + esc(target) + '" data-slug="' + esc(it.slug) + '"' +
+            ' title="Runs claude in ' + esc(target) + ', already told to read this project\'s notes">' +
+            'Claude + context</button>'
+        : '')
+    : '<span class="local">Read-only copy. Run <b>/deskbook serve</b> for the interactive version.</span>';
+
+  return (
+    '<div class="bar">' +
+    '<button class="btn primary" id="brief">Copy context <span class="n">' + size(false) + '</span></button>' +
+    live +
+    '<span class="spacer"></span>' +
+    '<button class="linkish" id="briefshort">outline only \u00b7 ' + size(true) + '</button>' +
+    '<span class="said" id="said"></span>' +
+    '</div>'
+  );
+}
+
+/**
+ * Deletion sits at the foot of the page, on its own, because it used to share a row
+ * with Folder and Notes — one slip away from the buttons you press all the time.
+ */
+function dangerZone(it) {
+  return (
+    '<div class="danger">' +
+    (DATA.live
+      ? '<button class="btn sm warn" id="del" data-slug="' + esc(it.slug) + '">Delete this item</button>'
+      : '<button class="linkish" id="copydel" data-cmd="deskbook rm ' + esc(it.slug) + '">copy delete command</button>') +
+    '<span class="hint">Moves to <code>run/.trash</code>, purged after 7 days. ' +
+    'The item is recoverable until then.</span>' +
+    '</div>'
+  );
+}
+
+async function post(url, body) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-deskbook': '1' },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) throw new Error(j.error || 'request failed');
+  return j;
+}
+
+function wireActions() {
+  const say = (t) => { const el = document.getElementById('said'); if (el) el.textContent = t; };
+  const flash = (btn, t) => {
+    const was = btn.textContent;
+    btn.textContent = t;
+    setTimeout(() => { btn.textContent = was; }, 1400);
+  };
+  const copyTo = async (btn, text, ok) => {
+    try { await navigator.clipboard.writeText(text); flash(btn, ok); }
+    catch (e) { say(text); }
+  };
+
+  const it = ALL.find((x) => keyOf(x) === current);
+
+  const brief = document.getElementById('brief');
+  if (brief && it) brief.addEventListener('click', () => {
+    const t = briefText(it, false);
+    copyTo(brief, t, 'copied ' + Math.round(t.length / 1024) + ' KB');
+  });
+
+  const outline = document.getElementById('briefshort');
+  if (outline && it) outline.addEventListener('click', () => copyTo(outline, briefText(it, true), 'outline copied'));
+
+  const copydel = document.getElementById('copydel');
+  if (copydel) copydel.addEventListener('click', () => copyTo(copydel, copydel.dataset.cmd, 'copied'));
+
+  // Static page: paths and commands are copied, because there is nothing to run them.
+  document.querySelectorAll('.pathbtn').forEach((b) =>
+    b.addEventListener('click', () => copyTo(b, b.dataset.path, 'copied')),
+  );
+
+  const del = document.getElementById('del');
+  if (del) del.addEventListener('click', async () => {
+    if (!confirm('Delete "' + del.dataset.slug + '"?\n\nIt moves to run/.trash and is purged after 7 days.')) return;
+    del.disabled = true;
+    try { await post('/delete', { slug: del.dataset.slug }); location.reload(); }
+    catch (e) { del.disabled = false; say('failed: ' + e.message); }
+  });
+
+  const ROUTES = { reveal: '/reveal', terminal: '/terminal', claude: '/claude', worktree: '/worktree/remove' };
+  document.querySelectorAll('[data-act]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      const act = b.dataset.act;
+      const near = b.parentElement && b.parentElement.querySelector('.rowsaid');
+      const tell = (t) => { if (near) near.textContent = t; else say(t); };
+      if (act === 'worktree') {
+        const pr = b.dataset.pr ? '\n\nIts pull request is ' + b.dataset.pr + '.' : '';
+        if (!confirm('Remove the worktree for "' + (b.dataset.branch || b.dataset.path) + '"?' + pr +
+                     '\n\nThe directory goes. The branch and its commits stay in git, but anything ' +
+                     'uncommitted in that directory is lost.')) return;
+      }
+      b.disabled = true;
+      tell('');
+      try {
+        await post(ROUTES[act], { path: b.dataset.path, slug: b.dataset.slug });
+        if (act === 'worktree') { location.reload(); return; }
+        b.disabled = false;
+        flash(b, 'opened');
+      } catch (e) {
+        b.disabled = false;
+        tell(e.message);
+      }
+    }),
+  );
+
+  const sweep = document.getElementById('sweep');
+  if (sweep) sweep.addEventListener('click', async () => {
+    const merged = DATA.worktrees.filter((w) => w.agent && !w.main && w.pr && w.pr.state.toLowerCase() === 'merged');
+    if (!confirm('Remove ' + merged.length + ' worktree(s) whose pull request has merged?\n\n' +
+                 merged.map((w) => w.branch).join('\n'))) return;
+    sweep.disabled = true;
+    for (const w of merged) { try { await post('/worktree/remove', { path: w.path }); } catch (e) { /* keep going */ } }
+    location.reload();
+  });
+}
+
+function drawAllTrees() {
+  const main = document.getElementById('main');
+  main.innerHTML =
+    '<div class="doc">' +
+    '<div class="crest"><span class="stamp">' + esc(DATA.repo || 'no repository') + '</span></div>' +
+    '<h1 class="name">Worktrees</h1>' +
+    (DATA.worktrees.length
+      ? treePanel(DATA.worktrees, DATA.worktrees.length + ' checked out') +
+        '<p class="hint">A worktree whose pull request is merged is safe to remove. ' +
+        '<code>deskbook cleanup</code> lists those under <code>.claude/worktrees/</code>.</p>'
+      : '<p class="hint">No worktrees, or this is not a git repository.</p>') +
+    '</div>';
+  wireActions();
+}
+
+function drawDoc() {
+  if (current === '::trees') { drawAllTrees(); return; }
+  const it = ALL.find((x) => keyOf(x) === current);
+  const main = document.getElementById('main');
+  if (!it) { main.innerHTML = '<p class="hint">Nothing here yet.</p>'; return; }
+
+  const docs = it.files.filter((f) => f.md !== null && f.name !== 'README.md');
+  const other = it.files.filter((f) => f.md === null);
+
+  main.innerHTML =
+    '<div class="doc">' +
+    '<div class="crest">' +
+      '<span class="dot bg-' + it.status + '"></span>' +
+      '<span class="st st-' + it.status + '">' + LABEL[it.status] + '</span>' +
+      '<span class="stamp">updated ' + it.updated + '</span>' +
+      '<span class="stamp">' + it.area + '/' + it.slug + '</span>' +
+    '</div>' +
+    '<h1 class="name">' + esc(it.title) + '</h1>' +
+    (it.tags.length ? '<div class="chips">' + it.tags.map((t) => '<span class="chip">' + esc(t) + '</span>').join('') + '</div>' : '') +
+    (it.links.length ? '<div class="jumps">' + it.links.map((l) => '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + ' &nearr;</a>').join('') + '</div>' : '') +
+    actionBar(it) +
+    (it.intro ? '<div class="md">' + md(it.intro) + '</div>' : '') +
+    docs
+      .map(
+        (f, n) =>
+          '<details class="sheet"' + (n === 0 && !it.intro ? ' open' : '') + '>' +
+          '<summary><span class="fname">' + esc(f.name) + '</span><span class="fsize">' + kb(f.bytes) + '</span></summary>' +
+          '<div class="md">' + md(f.md) + '</div></details>',
+      )
+      .join('') +
+    (other.length
+      ? '<h3 style="font-size:13px;margin:26px 0 8px;color:var(--ink-soft)">Other files</h3><div class="listing">' +
+        other.map((f) => '<div class="row">' + esc(f.name) + '<span class="p">' + kb(f.bytes) + '</span></div>').join('') +
+        '</div>'
+      : '') +
+    (!it.intro && !docs.length && !other.length ? '<p class="hint">No readable files.</p>' : '') +
+    treePanel(it.worktrees, 'Worktrees on this branch family', it.slug) +
+    dangerZone(it) +
+    (it.area === 'archive' ? '<p class="hint" style="margin-top:22px">Archived. Contents are listed but not loaded — open the files on disk if you need them.</p>' : '') +
+    '</div>';
+  wireActions();
+}
+
+/* ---------- theme ---------- */
+const THEMES = ['system', 'light', 'dark'];
+let theme = 'system';
+try { theme = localStorage.getItem('deskbook.theme') || 'system'; } catch (e) {}
+if (!THEMES.includes(theme)) theme = 'system';
+
+function applyTheme() {
+  if (theme === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themer').textContent = theme;
+}
+document.getElementById('themer').addEventListener('click', () => {
+  theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+  try { localStorage.setItem('deskbook.theme', theme); } catch (e) {}
+  applyTheme();
+});
+
+applyTheme();
+drawTallies();
+drawRail();
+drawDoc();
+</script>
