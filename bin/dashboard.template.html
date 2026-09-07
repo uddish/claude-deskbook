@@ -165,6 +165,8 @@ h1.name { font-size:26px; line-height:1.22; margin:0 0 12px; font-weight:600;
 .tag.merged { color:var(--s-parked); border-color:var(--rule); }
 .tag.open { color:var(--s-active); border-color:currentColor; }
 .tag.draft { color:var(--ink-faint); border-color:var(--rule); }
+.tag.closed { color:var(--s-blocked); border-color:var(--rule); }
+.jump .tag { margin-left:-5px; }
 .tag.agent { color:var(--accent); border-color:var(--rule); }
 .tag.detached { color:var(--s-blocked); border-color:var(--rule); }
 .tag.main { color:var(--ink); border-color:var(--ink-faint); }
@@ -450,7 +452,7 @@ function briefText(it, short) {
   L.push('**Status:** ' + it.status + (it.id ? ' \u00b7 **Key:** ' + it.id : '') + ' \u00b7 **Updated:** ' + it.updated);
   if (it.tags.length) L.push('**Tags:** ' + it.tags.join(', '));
   L.push('');
-  if (it.links.length) { L.push('## Links', ''); it.links.forEach((l) => L.push('- ' + (l.key ? l.label + ' ' + l.key : l.label) + ': ' + l.url)); L.push(''); }
+  if (it.links.length) { L.push('## Links', ''); it.links.forEach((l) => L.push('- ' + (l.key ? l.label + ' ' + l.key : l.label) + (l.state ? ' (' + l.state + ')' : '') + ': ' + l.url)); L.push(''); }
   if (it.worktrees && it.worktrees.length) {
     L.push('## Branches and worktrees', '');
     it.worktrees.forEach((w) => L.push('- `' + w.branch + '`' + (w.pr ? ' \u2014 PR #' + w.pr.number + ' ' + w.pr.state.toLowerCase() : '')));
@@ -489,7 +491,7 @@ function jumps(links) {
     ls.length === 1 && !ls[0].key
       ? '<span class="jump">' + a(ls[0], label + ' \u2197') + '</span>'
       : '<span class="jump"><span class="host">' + esc(label) + '</span>' +
-        ls.map((l) => a(l, l.key || tail(l.url))).join('') + '</span>',
+        ls.map((l) => a(l, l.key || tail(l.url)) + (l.state ? '<span class="tag ' + esc(l.state) + '">' + esc(l.state) + '</span>' : '')).join('') + '</span>',
   ).join('');
 }
 

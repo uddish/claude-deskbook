@@ -93,7 +93,9 @@ Notion, Shortcut, ClickUp and the rest all work with no configuration. Write
 `Label: https://…` to name one yourself.
 
 `branches` is only needed by an umbrella item whose child branches use
-different keys; it decides which worktrees the item shows.
+different keys; it decides which worktrees the item shows. A pull request found
+on any of those branches joins `links` by itself, so do not add PR URLs by hand
+when a worktree for the branch exists.
 
 Do not add an `updated` field; the tool reads the file's modification time.
 

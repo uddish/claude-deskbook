@@ -24,7 +24,7 @@ const run = (args, opts = {}) =>
   execFileSync('node', [CLI, ...args], {
     cwd: opts.cwd || repo,
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_CONFIG_DIR: config },
+    env: { ...process.env, CLAUDE_CONFIG_DIR: config, ...(opts.env || {}) },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
@@ -132,6 +132,34 @@ links:
   for (const needle of ['- Linear API-214: ', '- Linear API-271: ', '- GitHub #37667: ', '- Spec: https://docs.example.com/spec']) {
     if (!out.includes(needle)) throw new Error(`expected "${needle}" in brief`);
   }
+  return out;
+});
+
+// A branch's review joins the item's links through the same path as a hand-written
+// link. `gh` is stubbed on PATH so the test needs no network and no login.
+check('a branch\'s pull request joins the links, once, with its state', () => {
+  const stubbin = join(root, 'stubbin');
+  mkdirSync(stubbin, { recursive: true });
+  writeFileSync(join(stubbin, 'gh'), `#!/bin/sh
+case "$1 $2" in
+  "pr view") echo '{"number":42,"state":"OPEN","url":"https://github.com/acme/repo/pull/42","isDraft":false}' ;;
+  *) exit 1 ;;
+esac
+`, { mode: 0o755 });
+  execSync('git worktree add -q .claude/worktrees/wt-pr -b wt-pr', { cwd: repo });
+  writeFileSync(join(notesDir(), 'work', 'pr-linked.md'), `---
+title: PR linked
+status: active
+branches: [wt-pr]
+links:
+  - https://github.com/acme/repo/pull/42
+---
+# PR linked
+`);
+  const out = run(['brief', 'pr-linked', '--short'], { env: { PATH: stubbin + ':' + process.env.PATH } });
+  const line = '- GitHub #42 (open): https://github.com/acme/repo/pull/42';
+  const n = out.split(line).length - 1;
+  if (n !== 1) throw new Error(`expected "${line}" exactly once, saw it ${n} times`);
   return out;
 });
 

@@ -96,7 +96,7 @@ function labelLink(raw) {
 	return { label, url, key };
 }
 /** "Linear API-214" when the URL carries a key; "Linear" when it does not. */
-const linkName = (l) => (l.key ? `${l.label} ${l.key}` : l.label);
+const linkName = (l) => (l.key ? `${l.label} ${l.key}` : l.label) + (l.state ? ` (${l.state})` : '');
 const body = (text) => {
 	if (!text.startsWith('---\n')) return text;
 	const end = text.indexOf('\n---', 3);
@@ -194,7 +194,7 @@ function worktrees() {
 	}
 	// `gh pr view` costs about a second each, which is too slow for a page load or a
 	// session hook, so results are cached on disk for PR_TTL_MS.
-	const cachePath = join(ROOT, 'run', '.cache', 'pr.json');
+	const cachePath = join(ROOT, 'run', '.cache', 'pr-v2.json');
 	let cache = {};
 	try { cache = JSON.parse(readFileSync(cachePath, 'utf8')); } catch { /* first run */ }
 	let dirty = false;
@@ -204,11 +204,11 @@ function worktrees() {
 		if (hit && Date.now() - hit.at < PR_TTL_MS) { w.pr = hit.pr; continue; }
 		let pr = null;
 		try {
-			const json = execSync(`gh pr view ${JSON.stringify(w.branch)} --json number,state`, {
+			const json = execSync(`gh pr view ${JSON.stringify(w.branch)} --json number,state,url,isDraft`, {
 				encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], cwd: repo,
 			});
-			const { number, state } = JSON.parse(json);
-			pr = { number, state };
+			const { number, state, url, isDraft } = JSON.parse(json);
+			pr = { number, state: isDraft ? 'DRAFT' : state, url };
 		} catch { /* no PR, or no gh */ }
 		w.pr = pr;
 		cache[w.branch] = { at: Date.now(), pr };
@@ -241,7 +241,18 @@ function gather() {
 	const reference = collect('reference');
 	const archive = collect('archive').map((i) => ({ ...i, files: i.files.map((f) => ({ ...f, md: null })) , intro: null }));
 	const trees = worktrees();
-	for (const i of [...work, ...reference, ...archive]) i.worktrees = matchWorktrees(i, trees);
+	for (const i of [...work, ...reference, ...archive]) {
+		i.worktrees = matchWorktrees(i, trees);
+		// A branch's review is a link like any other, so it joins the item's links and
+		// renders with them. A hand-written duplicate stays and only gains the state.
+		for (const w of i.worktrees) {
+			if (!w.pr || !w.pr.url) continue;
+			const state = String(w.pr.state).toLowerCase();
+			const dup = i.links.find((l) => l.url === w.pr.url);
+			if (dup) dup.state ||= state;
+			else i.links.push({ ...labelLink(w.pr.url), state });
+		}
+	}
 	return { work, reference, archive, worktrees: trees, root: ROOT, repo: resolveRepo() };
 }
 

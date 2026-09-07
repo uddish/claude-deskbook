@@ -21,6 +21,9 @@ index, and makes cleanup mechanical.
   which checkouts are finished with.
 - **Works with any tracker.** Links are plain URLs; the label comes from the
   host. Jira, GitHub, Notion, Shortcut, ClickUp and the rest need no setup.
+- **Reviews find their own way in.** With `gh` installed, a pull request on one
+  of an item's branches joins its links with its state — no field to fill in.
+  Without `gh`, or on another host, paste the URL like any other link.
 
 ## Install
 
