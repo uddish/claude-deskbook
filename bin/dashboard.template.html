@@ -56,7 +56,7 @@ a:hover { text-decoration:underline; }
 .shell { display:grid; grid-template-columns:290px minmax(0,1fr); align-items:start; }
 @media (max-width:860px) { .shell { grid-template-columns:1fr; } }
 
-.rail { position:sticky; top:57px; max-height:calc(100vh - 57px); overflow-y:auto;
+.rail { position:sticky; top:var(--mast-h, 57px); max-height:calc(100vh - var(--mast-h, 57px)); overflow-y:auto;
   background:var(--panel-2); border-right:1px solid var(--rule); padding:18px 0 40px; }
 @media (max-width:860px) { .rail { position:static; max-height:none; border-right:0;
   border-bottom:1px solid var(--rule); } }
@@ -75,7 +75,7 @@ a:hover { text-decoration:underline; }
   display:block; margin-bottom:1px; }
 .pick[aria-current="true"] .key { color:var(--accent); }
 
-main { padding:30px 34px 90px; max-width:none; }
+main { padding:30px 34px 90px; max-width:none; scroll-margin-top:var(--mast-h, 57px); }
 @media (max-width:860px) { main { padding:22px 18px 60px; } }
 .doc { max-width:80ch; }
 .crest { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:5px; }
@@ -201,7 +201,7 @@ h1.name { font-size:26px; line-height:1.22; margin:0 0 12px; font-weight:600;
 .sub { font-family:var(--mono); font-size:11px; color:var(--ink-faint); padding:0 22px 6px; }
 </style>
 
-<div class="masthead">
+<div class="masthead" id="masthead">
   <div class="wordmark">Deskbook<span>__GENERATED__</span></div>
   <div class="tallies" id="tallies"></div>
   <button class="themer" id="themer" type="button" aria-label="Change colour theme"></button>
@@ -322,7 +322,17 @@ const copyTo = async (btn, text, ok) => {
   catch (e) { say(text); }
 };
 
+// The masthead is sticky and its height varies, so measure it and let CSS offset the
+// rail and the content's scroll target by the real value. Guarded: the page verifier
+// runs this script against a stub DOM with no layout.
+function measureMasthead() {
+  const h = document.getElementById('masthead').offsetHeight;
+  if (h && document.documentElement.style) document.documentElement.style.setProperty('--mast-h', h + 'px');
+}
+if (typeof addEventListener === 'function') addEventListener('resize', measureMasthead);
+
 function drawTallies() {
+  measureMasthead();
   // The root sits outside the repository, so it is shown, copyable, on every view.
   const where = document.getElementById('where');
   where.innerHTML = 'notes <code>' + esc(DATA.root || '?') + '</code>' +
