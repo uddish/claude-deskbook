@@ -70,17 +70,33 @@ const HOSTS = {
 	'height.app': 'Height', 'monday.com': 'Monday', 'clickup.com': 'ClickUp',
 	'app.plane.so': 'Plane', 'youtrack.cloud': 'YouTrack',
 };
+/**
+ * The identifier a URL carries — an issue key, a PR number — so five links to one
+ * tracker read as five keys instead of the host name five times.
+ */
+function linkKey(host, path) {
+	let m;
+	if ((m = path.match(/\/issue\/([A-Za-z][A-Za-z0-9]*-\d+)/))) return m[1].toUpperCase();
+	if ((m = path.match(/\/browse\/([A-Z][A-Z0-9]+-\d+)/))) return m[1];
+	if (/github\.com$/.test(host) && (m = path.match(/\/(?:pull|issues)\/(\d+)/))) return `#${m[1]}`;
+	if (/gitlab/.test(host) && (m = path.match(/\/merge_requests\/(\d+)/))) return `!${m[1]}`;
+	if (/gitlab/.test(host) && (m = path.match(/\/issues\/(\d+)/))) return `#${m[1]}`;
+	return null;
+}
 function labelLink(raw) {
 	const pair = raw.match(/^([^:]{1,40}):\s*(https?:\/\/.*)$/);
-	if (pair) return { label: pair[1].trim(), url: pair[2].trim() };
-	let host = '';
-	try { host = new URL(raw).hostname.replace(/^www\./, ''); } catch { return { label: raw, url: raw }; }
+	const url = pair ? pair[2].trim() : raw;
+	let u = null;
+	try { u = new URL(url); } catch { return { label: pair ? pair[1].trim() : raw, url, key: null }; }
+	const host = u.hostname.replace(/^www\./, '');
+	const key = linkKey(host, u.pathname);
+	if (pair) return { label: pair[1].trim(), url, key };
 	const known = Object.keys(HOSTS).find((h) => host === h || host.endsWith('.' + h));
-	if (known) return { label: HOSTS[known], url: raw };
-	if (/(^|\.)atlassian\.net$/.test(host)) return { label: 'Jira', url: raw };
-	if (/jira/.test(host)) return { label: 'Jira', url: raw };
-	return { label: host, url: raw };
+	const label = known ? HOSTS[known] : (/(^|\.)atlassian\.net$/.test(host) || /jira/.test(host)) ? 'Jira' : host;
+	return { label, url, key };
 }
+/** "Linear API-214" when the URL carries a key; "Linear" when it does not. */
+const linkName = (l) => (l.key ? `${l.label} ${l.key}` : l.label);
 const body = (text) => {
 	if (!text.startsWith('---\n')) return text;
 	const end = text.indexOf('\n---', 3);
@@ -454,7 +470,7 @@ function sessionPrompt(item, notesPath) {
 		`Notes root: ${ROOT} — read RULES.md there for the layout rules before you write any note.`,
 		`This item's notes: ${notesPath}. Read them before doing anything else; they hold the plan and the decisions already taken.`,
 	];
-	if (item.links && item.links.length) lines.push('', 'Links:', ...item.links.map((l) => `- ${l.label}: ${l.url}`));
+	if (item.links && item.links.length) lines.push('', 'Links:', ...item.links.map((l) => `- ${linkName(l)}: ${l.url}`));
 	if (item.worktrees && item.worktrees.length) {
 		lines.push('', 'Branches:', ...item.worktrees.map((w) => `- ${w.branch}${w.pr ? ` (PR #${w.pr.number} ${w.pr.state.toLowerCase()})` : ''}`));
 	}
@@ -759,7 +775,7 @@ function brief(target, short) {
 	out.push('');
 	if (it.links.length) {
 		out.push('## Links', '');
-		for (const l of it.links) out.push(`- ${l.label}: ${l.url}`);
+		for (const l of it.links) out.push(`- ${linkName(l)}: ${l.url}`);
 		out.push('');
 	}
 	if (it.worktrees.length) {

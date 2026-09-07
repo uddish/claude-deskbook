@@ -116,6 +116,25 @@ check('new refuses a duplicate slug without a stack trace', () => {
   if (!stderr.includes('already')) throw new Error(`expected a plain message, got: ${stderr.trim().split('\n')[0]}`);
   return stderr;
 });
+check('brief labels links with the key the URL carries', () => {
+  writeFileSync(join(notesDir(), 'work', 'linked.md'), `---
+title: Linked
+status: active
+links:
+  - https://linear.app/acme/issue/API-214/some-slug
+  - https://linear.app/acme/issue/API-271
+  - https://github.com/acme/repo/pull/37667
+  - Spec: https://docs.example.com/spec
+---
+# Linked
+`);
+  const out = run(['brief', 'linked', '--short']);
+  for (const needle of ['- Linear API-214: ', '- Linear API-271: ', '- GitHub #37667: ', '- Spec: https://docs.example.com/spec']) {
+    if (!out.includes(needle)) throw new Error(`expected "${needle}" in brief`);
+  }
+  return out;
+});
+
 // The served page must reflect a note written after the server started: a hand
 // edit or a `deskbook new` from a terminal are not visible to the server otherwise.
 await (async () => {
