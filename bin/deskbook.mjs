@@ -798,9 +798,11 @@ function brief(target, short) {
 function create(slug) {
 	if (!slug) { console.error('usage: deskbook new <slug>'); process.exit(1); }
 	const path = join(ROOT, 'work', `${slug}.md`);
-	writeFileSync(
-		path,
-		`---
+	mkdirSync(dirname(path), { recursive: true });
+	try {
+		writeFileSync(
+			path,
+			`---
 title: ${titleCase(slug)}
 status: active
 ---
@@ -808,14 +810,54 @@ status: active
 # ${titleCase(slug)}
 
 `,
-		{ flag: 'wx' },
-	);
+			{ flag: 'wx' },
+		);
+	} catch (e) {
+		// `wx` is deliberate: it must never overwrite a note. Say so without a stack trace.
+		if (e.code !== 'EEXIST') throw e;
+		console.error(`  work/${slug}.md already exists. Pick another slug, or edit that file`);
+		process.exit(1);
+	}
 	console.log(`  created work/${slug}.md`);
+	reindex();
 }
 
-const USAGE = `  deskbook shim [dir] | init | adopt | [index] | new <slug> | brief <slug> [--short]
+/** Rewrites both generated files. `new` calls it too, so a fresh note shows up at once. */
+function reindex() {
+	const data = gather();
+	const counts = writeIndex(data);
+	const out = join(ROOT, 'dashboard.html');
+	writeFileSync(out, renderDashboard(data));
+	console.log(`  INDEX.md + dashboard.html written — ${counts.active} active, ${counts.total} in work, ${counts.reference} reference, ${counts.archive} archived`);
+	// A page that throws renders blank with no other symptom, so prove it renders.
+	try {
+		const bare = counts.total + counts.reference + counts.archive === 0 ? ' --empty' : '';
+		execSync(`node ${JSON.stringify(join(HERE, 'verify-page.mjs'))} ${JSON.stringify(out)}${bare}`, { stdio: ['ignore', 'pipe', 'pipe'] });
+	} catch (e) {
+		const detail = [e.stdout, e.stderr].filter(Boolean).map(String).join('').trim();
+		console.error(`\n  !! dashboard.html does not render:\n${detail.replace(/^/gm, '  ')}`);
+		process.exitCode = 1;
+	}
+}
+
+/**
+ * The notes root sits outside the repository, which makes it easy to lose. The path is
+ * the only thing on stdout, so `cd "$(deskbook where)"` works; hints go to stderr.
+ */
+function where() {
+	console.log(ROOT);
+	if (!existsSync(join(ROOT, 'RULES.md'))) {
+		console.error('  no notebook here yet. Run `deskbook init` to start one');
+		return;
+	}
+	console.error('  `deskbook serve --open` opens the dashboard, where every action works');
+}
+
+const USAGE = `  deskbook shim [dir] | init | where | adopt | [index] | new <slug> | brief <slug> [--short]
   deskbook rm <slug> [--purge] | worktree rm <branch> | serve [port] [--open] | cleanup [--apply]`;
-const COMMANDS = ['shim', 'init', 'adopt', 'index', 'new', 'brief', 'rm', 'worktree', 'serve', 'cleanup'];
+const COMMANDS = ['shim', 'init', 'where', 'adopt', 'index', 'new', 'brief', 'rm', 'worktree', 'serve', 'cleanup'];
+/** These three answer without a notebook. Everything else refuses until `init`. */
+const NO_INIT = new Set(['shim', 'init', 'where']);
 
 /** The four areas exist because `init` made them, never as a side effect of another command. */
 function scaffold() {
@@ -839,7 +881,7 @@ if (!COMMANDS.includes(name)) {
 	console.error(`unknown command: ${cmd}\n${USAGE}`);
 	process.exit(1);
 }
-if (name !== 'shim' && name !== 'init') requireInit();
+if (!NO_INIT.has(name)) requireInit();
 
 if (name === 'shim') shim(arg);
 else if (name === 'init') {
@@ -850,30 +892,15 @@ else if (name === 'init') {
 		writeFileSync(dst, readFileSync(join(HERE, 'RULES.template.md'), 'utf8'));
 		console.log(`  deskbook ready at ${ROOT}`);
 	}
-} else if (name === 'new') create(arg);
+} else if (name === 'where') where();
+else if (name === 'new') create(arg);
 else if (name === 'rm') remove(arg, process.argv.includes('--purge'));
 else if (name === 'brief') brief(arg, process.argv.includes('--short'));
 else if (name === 'adopt') adopt(process.argv.slice(3));
 else if (name === 'serve') await serve(arg, process.argv.includes('--open'));
 else if (name === 'worktree') worktreeRemove(process.argv[4] || arg);
 else if (name === 'cleanup') cleanup(arg === '--apply');
-else {
-	const data = gather();
-	const counts = writeIndex(data);
-	const html = renderDashboard(data);
-	const out = join(ROOT, 'dashboard.html');
-	writeFileSync(out, html);
-	console.log(`  INDEX.md + dashboard.html written — ${counts.active} active, ${counts.total} in work, ${counts.reference} reference, ${counts.archive} archived`);
-	// A page that throws renders blank with no other symptom, so prove it renders.
-	try {
-		const bare = counts.total + counts.reference + counts.archive === 0 ? ' --empty' : '';
-		execSync(`node ${JSON.stringify(join(HERE, 'verify-page.mjs'))} ${JSON.stringify(out)}${bare}`, { stdio: ['ignore', 'pipe', 'pipe'] });
-	} catch (e) {
-		const detail = [e.stdout, e.stderr].filter(Boolean).map(String).join('').trim();
-		console.error(`\n  !! dashboard.html does not render:\n${detail.replace(/^/gm, '  ')}`);
-		process.exitCode = 1;
-	}
-}
+else reindex();
 
 function renderDashboard(data, live = false) {
 	const template = readFileSync(join(HERE, 'dashboard.template.html'), 'utf8');

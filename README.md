@@ -43,8 +43,12 @@ claude
 **Nothing happens until `init`.** In a repository you have not opted in, every
 other command refuses and writes nothing at all.
 
-`init` prints the notes path once. Two things bring it back: the dashboard shows
-it, and the refusal message names it in any repository that has no notebook yet.
+Lost the path a week later? `/deskbook where` prints it, in any repository, with
+or without a notebook. The path is the only thing on stdout, so this works:
+
+```bash
+cd "$(deskbook where)"
+```
 
 ## Two ways to run it
 
@@ -154,6 +158,7 @@ notes/
 | -- | -- |
 | `deskbook shim [dir]` | install a `deskbook` command on your PATH |
 | `deskbook init` | create the layout and install `RULES.md` |
+| `deskbook where` | print the notes root; works before `init` too |
 | `deskbook index` | rewrite `INDEX.md` and `dashboard.html` |
 | `deskbook new <slug>` | create a task file with front matter |
 | `deskbook adopt [--all]` | find existing notes; `--take a.md,b.md` brings them in |

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Runs every command in a throwaway repo. A range edit that deletes a function
 // shows up here as a failing command rather than a silent break at the call site.
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync, execSync } from 'node:child_process';
@@ -68,12 +68,38 @@ const refuses = (name, args) =>
 refuses('index refuses before init', ['index']);
 refuses('new refuses before init', ['new', 'too-early']);
 
+check('where answers before init, and writes nothing', () => {
+  const out = run(['where']);
+  if (!out.trim().endsWith('notes')) throw new Error(`expected a notes path, got: ${out.trim()}`);
+  untouched();
+  return out;
+});
+
 expect('init', () => run(['init']), 'deskbook ready');
 expect('index on an empty notebook', () => run(['index']), 'dashboard.html written');
+expect('where', () => run(['where']), 'notes');
 expect('adopt (scan)', () => run(['adopt']), 'widget-plan.md');
 expect('adopt --json', () => run(['adopt', '--json']), '"why"');
 expect('adopt --take', () => run(['adopt', '--take', 'notes/widget-plan.md']), 'adopted work/widget-plan.md');
 expect('new', () => run(['new', 'a-task']), 'created work/a-task.md');
+
+const notesDir = () => join(config, 'projects', readdirSync(join(config, 'projects'))[0], 'notes');
+
+check('new writes the index', () => {
+  run(['new', 'indexed-by-new']);
+  const idx = readFileSync(join(notesDir(), 'INDEX.md'), 'utf8');
+  if (!idx.includes('indexed-by-new')) throw new Error('INDEX.md does not list the item new just created');
+  return 'ok';
+});
+
+check('new refuses a duplicate slug without a stack trace', () => {
+  let stderr = null;
+  try { run(['new', 'indexed-by-new']); } catch (e) { stderr = String(e.stderr || ''); }
+  if (stderr === null) throw new Error('should have exited non-zero');
+  if (/EEXIST|openSync/.test(stderr)) throw new Error('leaked a stack trace');
+  if (!stderr.includes('already')) throw new Error(`expected a plain message, got: ${stderr.trim().split('\n')[0]}`);
+  return stderr;
+});
 expect('index', () => run(['index']), 'dashboard.html written');
 expect('brief', () => run(['brief', 'a-task']), '**Status:** active');
 expect('brief --short', () => run(['brief', 'widget-plan', '--short']), '## Contents');

@@ -124,6 +124,7 @@ The bare `deskbook` command does not exist unless the user has run
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs shim        # optional: a PATH command
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs init
+node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs where         # the notes root, alone on stdout
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs adopt --json     # find existing notes
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs adopt --take a.md,b.md
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs index          # INDEX.md + dashboard.html
@@ -137,6 +138,10 @@ node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs cleanup --apply
 ```
 
 Never pass `--purge` or `--apply` unless the user asked for it.
+
+`new` indexes afterwards, so do not follow it with `index`. Every command except
+`init`, `where` and `shim` refuses in a repository with no `RULES.md`, and writes
+nothing there — so a refusal means "not set up yet", never "broken".
 
 ## Resuming or handing over
 
