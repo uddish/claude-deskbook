@@ -137,11 +137,22 @@ node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs cleanup        # dry run
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs cleanup --apply
 ```
 
-Never pass `--purge` or `--apply` unless the user asked for it.
+### Operating notes
 
-`new` indexes afterwards, so do not follow it with `index`. Every command except
-`init`, `where` and `shim` refuses in a repository with no `RULES.md`, and writes
-nothing there — so a refusal means "not set up yet", never "broken".
+- **Arguments.** When the user types `/deskbook <args>`, run the tool with those
+  arguments. With none, run `index`.
+- **`serve` runs until stopped.** Start it in the background and give the user
+  the URL. Never wait on it.
+- **After `index`,** report the counts and offer to publish `dashboard.html` as
+  an artifact.
+- **After `cleanup` with no `--apply`,** show what would happen and ask first.
+  Never pass `--apply` or `--purge` unless the user asked for it.
+- **`where`** answers "where do my notes live", in any repository, with or
+  without a notebook. The path is the only thing on stdout.
+- **`new` indexes afterwards,** so do not follow it with `index`.
+- **A refusal means "not set up yet", never "broken".** Every command except
+  `init`, `where` and `shim` refuses in a repository with no `RULES.md`, and
+  writes nothing there.
 
 ## Resuming or handing over
 
