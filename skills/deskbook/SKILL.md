@@ -195,6 +195,10 @@ touched.
 with the markdown rendered inline. It is self-contained, so publish it with the
 Artifact tool and hand the user the link, or open the file directly.
 
+The header shows the notes root with a **copy path** button, and every item has
+one for its own file. Point the user there when they want to hand a plan to
+another Claude session.
+
 **`serve` is the working view; the artifact is a share view.** A hosted page
 cannot reach the filesystem, so its buttons copy a path or a command. Locally,
 Folder, Terminal, Claude session, worktree removal and delete all run for real.

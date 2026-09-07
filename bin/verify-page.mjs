@@ -40,13 +40,19 @@ if (!rail || !rail.innerHTML) { console.error('BLANK: #rail received no content'
 
 // A notebook with no notes still has to render, so assert its empty state instead
 // of item markup it cannot have. The caller knows the count and passes --empty.
+// The notes root sits outside the repository and is easy to lose, so the page must
+// always show it with a copy button — with or without items.
+const where = nodes.get('where');
+const rootShown = ['notes root shown with a copy button', !!where && /\/notes/.test(where.innerHTML) && /class="pathbtn"/.test(where.innerHTML)];
 const checks = process.argv.includes('--empty')
-  ? [['empty state rendered', /class="hint"/.test(main.innerHTML)]]
+  ? [['empty state rendered', /class="hint"/.test(main.innerHTML)], rootShown]
   : [
       ['item title rendered', /class="name"/.test(main.innerHTML)],
       ['action bar rendered', /Copy context/.test(main.innerHTML)],
+      ['item has a copy-path button', /id="copypath"/.test(main.innerHTML)],
       ['note body rendered', /class="md"|class="sheet"/.test(main.innerHTML)],
       ['sidebar has items', /class="pick"/.test(rail.innerHTML)],
+      rootShown,
     ];
 let bad = 0;
 for (const [name, ok] of checks) { console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${name}`); if (!ok) bad++; }

@@ -428,12 +428,16 @@ function revealCmd(path) {
  * Launches through a generated shell script rather than inlining the command.
  * A context prompt contains quotes, newlines and backticks, and threading that
  * through AppleScript or cmd quoting is where this breaks.
+ *
+ * The session usually starts in a worktree, whose path would resolve to a different,
+ * empty notes root. DESKBOOK_HOME pins it to this notebook, so the session-start hook
+ * and every `deskbook` command in that session see the same notes as this page.
  */
 function launcher(slug, dir, run) {
 	const dest = join(ROOT, 'run', '.launch');
 	mkdirSync(dest, { recursive: true });
 	const path = join(dest, `${slug || 'deskbook'}.sh`);
-	writeFileSync(path, `#!/bin/sh\ncd ${shq(dir)} || exit 1\n${run}\n`, { mode: 0o755 });
+	writeFileSync(path, `#!/bin/sh\ncd ${shq(dir)} || exit 1\nexport DESKBOOK_HOME=${shq(ROOT)}\n${run}\n`, { mode: 0o755 });
 	return path;
 }
 const shq = (v) => `'${String(v).replace(/'/g, "'\\''")}'`;
@@ -447,7 +451,8 @@ function sessionPrompt(item, notesPath) {
 	const lines = [
 		`Continue work on "${item.title}" (status: ${item.status}${item.id ? `, key: ${item.id}` : ''}).`,
 		'',
-		`Read the notes at ${notesPath} before doing anything else. They hold the plan and the decisions already taken.`,
+		`Notes root: ${ROOT} — read RULES.md there for the layout rules before you write any note.`,
+		`This item's notes: ${notesPath}. Read them before doing anything else; they hold the plan and the decisions already taken.`,
 	];
 	if (item.links && item.links.length) lines.push('', 'Links:', ...item.links.map((l) => `- ${l.label}: ${l.url}`));
 	if (item.worktrees && item.worktrees.length) {

@@ -90,8 +90,9 @@ choosing it, and files are copied, never moved.
 
 | Action | What happens |
 | -- | -- |
+| copy path | copies the item's path, or — in the header — the notes root, to paste into another Claude session |
 | Folder | reveals the directory, or the note file, in your file manager |
-| Claude + context | opens a terminal in the worktree and runs `claude`, already told which project it is and where the notes are |
+| Claude + context | opens a terminal in the worktree and runs `claude`, told the notes root, `RULES.md`, and this item's file. `DESKBOOK_HOME` is set, so the hook and every `deskbook` command in that session use this notebook even from a worktree |
 | remove | `git worktree remove` — the directory goes, the branch stays |
 | remove N merged | removes every agent worktree whose pull request has merged |
 | delete | moves the item to `run/.trash` |

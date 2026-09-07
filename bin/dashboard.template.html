@@ -45,6 +45,9 @@ a:hover { text-decoration:underline; }
 .tallies { display:flex; gap:16px; margin-left:auto; font-family:var(--mono);
   font-size:11.5px; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
 .tallies b { color:var(--ink); font-weight:500; }
+.where { flex-basis:100%; display:flex; gap:10px; align-items:baseline; font-family:var(--mono);
+  font-size:11.5px; color:var(--ink-soft); overflow-wrap:anywhere; }
+.where code { color:var(--ink); font-size:11.5px; }
 .themer { border:1px solid var(--rule); background:var(--panel-2); color:var(--ink-soft);
   font-family:var(--mono); font-size:11px; letter-spacing:0.04em; text-transform:uppercase;
   border-radius:4px; padding:4px 9px; cursor:pointer; }
@@ -198,6 +201,7 @@ h1.name { font-size:26px; line-height:1.22; margin:0 0 12px; font-weight:600;
 <div class="masthead">
   <div class="wordmark">Deskbook<span>__GENERATED__</span></div>
   <div class="tallies" id="tallies"></div>
+  <div class="where" id="where"></div>
   <button class="themer" id="themer" type="button" aria-label="Change colour theme"></button>
 </div>
 
@@ -304,7 +308,23 @@ if (current !== '::trees' && !ALL.some((it) => keyOf(it) === current)) current =
 
 const kb = (n) => (n < 1024 ? n + ' B' : (n / 1024).toFixed(n < 10240 ? 1 : 0) + ' KB');
 
+const say = (t) => { const el = document.getElementById('said'); if (el) el.textContent = t; };
+const flash = (btn, t) => {
+  const was = btn.textContent;
+  btn.textContent = t;
+  setTimeout(() => { btn.textContent = was; }, 1400);
+};
+const copyTo = async (btn, text, ok) => {
+  try { await navigator.clipboard.writeText(text); flash(btn, ok); }
+  catch (e) { say(text); }
+};
+
 function drawTallies() {
+  // The root sits outside the repository, so it is shown, copyable, on every view.
+  const where = document.getElementById('where');
+  where.innerHTML = 'notes <code>' + esc(DATA.root || '?') + '</code>' +
+    '<button class="pathbtn" data-path="' + esc(DATA.root || '') + '" title="Copy the notes root">copy path</button>';
+  where.onclick = (e) => { const b = e.target; if (b && b.dataset && b.dataset.path) copyTo(b, b.dataset.path, 'copied'); };
   const n = (s) => DATA.work.filter((i) => i.status === s).length;
   document.getElementById('tallies').innerHTML =
     '<span><b>' + n('active') + '</b> active</span>' +
@@ -469,6 +489,7 @@ function actionBar(it) {
   return (
     '<div class="bar">' +
     '<button class="btn primary" id="brief">Copy context <span class="n">' + size(false) + '</span></button>' +
+    '<button class="btn" id="copypath" data-path="' + esc(notes) + '" title="Copy ' + esc(notes) + '">copy path</button>' +
     live +
     '<span class="spacer"></span>' +
     '<button class="linkish" id="briefshort">outline only \u00b7 ' + size(true) + '</button>' +
@@ -505,16 +526,6 @@ async function post(url, body) {
 }
 
 function wireActions() {
-  const say = (t) => { const el = document.getElementById('said'); if (el) el.textContent = t; };
-  const flash = (btn, t) => {
-    const was = btn.textContent;
-    btn.textContent = t;
-    setTimeout(() => { btn.textContent = was; }, 1400);
-  };
-  const copyTo = async (btn, text, ok) => {
-    try { await navigator.clipboard.writeText(text); flash(btn, ok); }
-    catch (e) { say(text); }
-  };
 
   const it = ALL.find((x) => keyOf(x) === current);
 
@@ -527,11 +538,14 @@ function wireActions() {
   const outline = document.getElementById('briefshort');
   if (outline && it) outline.addEventListener('click', () => copyTo(outline, briefText(it, true), 'outline copied'));
 
+  const copypath = document.getElementById('copypath');
+  if (copypath) copypath.addEventListener('click', () => copyTo(copypath, copypath.dataset.path, 'path copied'));
+
   const copydel = document.getElementById('copydel');
   if (copydel) copydel.addEventListener('click', () => copyTo(copydel, copydel.dataset.cmd, 'copied'));
 
   // Static page: paths and commands are copied, because there is nothing to run them.
-  document.querySelectorAll('.pathbtn').forEach((b) =>
+  document.querySelectorAll('#main .pathbtn').forEach((b) =>
     b.addEventListener('click', () => copyTo(b, b.dataset.path, 'copied')),
   );
 
