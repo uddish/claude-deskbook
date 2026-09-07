@@ -4,7 +4,7 @@
 import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
-import { execFileSync, execSync } from 'node:child_process';
+import { execFileSync, execSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), 'deskbook.mjs');
@@ -116,6 +116,32 @@ check('new refuses a duplicate slug without a stack trace', () => {
   if (!stderr.includes('already')) throw new Error(`expected a plain message, got: ${stderr.trim().split('\n')[0]}`);
   return stderr;
 });
+// The served page must reflect a note written after the server started: a hand
+// edit or a `deskbook new` from a terminal are not visible to the server otherwise.
+await (async () => {
+  const name = 'serve reflects a note written after it started';
+  const port = 4600 + Math.floor(Math.random() * 400);
+  const url = `http://127.0.0.1:${port}/`;
+  const srv = spawn('node', [CLI, 'serve', String(port)], {
+    cwd: repo, env: { ...process.env, CLAUDE_CONFIG_DIR: config }, stdio: 'ignore',
+  });
+  try {
+    let up = false;
+    for (let i = 0; i < 50 && !up; i++) {
+      try { up = (await fetch(url)).ok; } catch { await new Promise((r) => setTimeout(r, 100)); }
+    }
+    if (!up) throw new Error('server did not start');
+    const before = await (await fetch(url)).text();
+    run(['new', 'written-after-serve']);
+    const after = await (await fetch(url)).text();
+    if (before.includes('written-after-serve')) throw new Error('slug present before it was created');
+    if (!after.includes('written-after-serve')) throw new Error('served page does not show the new note');
+    console.log(`  ok    ${name}`); pass++;
+  } catch (e) {
+    console.log(`  FAIL  ${name}\n          ${e.message}`); fail++;
+  } finally { srv.kill(); }
+})();
+
 expect('index', () => run(['index']), 'dashboard.html written');
 expect('brief', () => run(['brief', 'a-task']), '**Status:** active');
 expect('brief --short', () => run(['brief', 'widget-plan', '--short']), '## Contents');

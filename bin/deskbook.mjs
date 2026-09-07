@@ -487,16 +487,8 @@ function terminalCmd(path, run) {
 async function serve(portArg, openBrowser) {
 	const { createServer } = await import('node:http');
 	const port = Number(portArg) || 4478;
-	let snapshot = null;
-	let cached = null;
-	const build = () => {
-		snapshot = gather();
-		cached = renderDashboard(snapshot, true);
-		return cached;
-	};
-	const invalidate = () => { cached = null; snapshot = null; };
-	const page = () => cached || build();
-
+	// No cache: a full read and render is ~100 ms, and a cache hid every note written
+	// outside the page — a hand edit, a `deskbook new` in a terminal, a template change.
 	const readBody = (req) =>
 		new Promise((resolve) => {
 			let raw = '';
@@ -511,15 +503,15 @@ async function serve(portArg, openBrowser) {
 		};
 
 		if (req.method === 'GET') {
-			if (req.url === '/refresh') { invalidate(); send(200, { ok: true }); return; }
+			if (req.url === '/refresh') { send(200, { ok: true }); return; }
 			res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-			res.end(page());
+			res.end(renderDashboard(gather(), true));
 			return;
 		}
 
 		if (req.headers['x-deskbook'] !== '1') { send(403, { ok: false, error: 'forbidden' }); return; }
 		const body = await readBody(req);
-		if (!snapshot) build();
+		const snapshot = gather();
 		const allowed = allowedPaths(snapshot);
 
 		const runFor = (path, cmd) => {
@@ -553,7 +545,6 @@ async function serve(portArg, openBrowser) {
 			}
 			case '/delete': {
 				const ok = (() => { try { return remove(body.slug, false); } catch { return false; } })();
-				if (ok) invalidate();
 				return send(ok ? 200 : 404, { ok });
 			}
 			case '/worktree/remove': {
@@ -562,7 +553,6 @@ async function serve(portArg, openBrowser) {
 				if (w.main) return send(400, { ok: false, error: 'this is the main checkout — git cannot remove it' });
 				try {
 					execSync(`git -C ${JSON.stringify(snapshot.repo)} worktree remove ${JSON.stringify(w.path)} --force`, { stdio: 'ignore' });
-					invalidate();
 					return send(200, { ok: true });
 				} catch (e) {
 					return send(500, { ok: false, error: e.message.split('\n')[0] });
