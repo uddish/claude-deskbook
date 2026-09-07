@@ -10,6 +10,8 @@ index, and makes cleanup mechanical.
 ## What it gives you
 
 - **One predictable root**, per project, resolved from the working directory.
+- **Opt-in per repository.** Nothing is created until you run `init`, so the
+  plugin does not add a notes directory to every repository you open.
 - **A file per task**, and a directory only when a second file has to exist.
 - **`INDEX.md`**, generated from front matter — never hand-maintained.
 - **A dashboard**, one self-contained HTML page showing every note rendered.
@@ -28,6 +30,21 @@ claude
 > /plugin marketplace add ./claude-deskbook
 > /plugin install deskbook
 ```
+
+## 60-second start
+
+```
+/deskbook init          # opt this repository in, and print where notes live
+/deskbook adopt         # find notes you already have; pick which to bring in
+/deskbook new my-task   # a task file, with front matter filled in
+/deskbook serve --open  # the dashboard, with every action live
+```
+
+**Nothing happens until `init`.** In a repository you have not opted in, every
+other command refuses and writes nothing at all.
+
+`init` prints the notes path once. Two things bring it back: the dashboard shows
+it, and the refusal message names it in any repository that has no notebook yet.
 
 ## Two ways to run it
 
@@ -96,7 +113,27 @@ set the server builds itself from `git worktree list`.
 2. otherwise `${CLAUDE_CONFIG_DIR:-~/.claude}/projects/<cwd-as-slug>/notes`
 
 So each repository gets its own notebook, in the place Claude Code already
-keeps that project's files.
+keeps that project's files. A repository has none until you run `init` in it.
+
+### Why aren't my notes in my repository?
+
+Because notes are personal, and a repository is shared. Working notes name
+customers, unreleased work, and opinions you have not finished forming. A
+default inside the repository puts all of that one `git add` away from a public
+branch. Outside it, that mistake cannot happen.
+
+If you want them in the repository anyway, ask for it:
+
+```bash
+export DESKBOOK_HOME="$PWD/notes"
+```
+
+Then commit the directory. Two consequences to accept first: the notes are now
+as public as the repository, and everyone who clones it gets them.
+
+Use an absolute path, as above. A relative `./notes` also works, but it resolves
+from the directory you run the command in, so it finds nothing from a
+subdirectory.
 
 ## Layout
 
