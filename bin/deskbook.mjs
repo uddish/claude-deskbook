@@ -813,25 +813,51 @@ status: active
 	console.log(`  created work/${slug}.md`);
 }
 
-for (const d of ['work', 'reference', 'archive', 'run']) mkdirSync(join(ROOT, d), { recursive: true });
+const USAGE = `  deskbook shim [dir] | init | adopt | [index] | new <slug> | brief <slug> [--short]
+  deskbook rm <slug> [--purge] | worktree rm <branch> | serve [port] [--open] | cleanup [--apply]`;
+const COMMANDS = ['shim', 'init', 'adopt', 'index', 'new', 'brief', 'rm', 'worktree', 'serve', 'cleanup'];
+
+/** The four areas exist because `init` made them, never as a side effect of another command. */
+function scaffold() {
+	for (const d of ['work', 'reference', 'archive', 'run']) mkdirSync(join(ROOT, d), { recursive: true });
+}
+
+/**
+ * `RULES.md` marks a repository somebody opted in. Without it every other command
+ * refuses and writes nothing, so opening an unrelated repository never grows a
+ * notes directory, and the session hook has a cheap test for staying silent.
+ */
+function requireInit() {
+	if (existsSync(join(ROOT, 'RULES.md'))) return;
+	console.error(`  no deskbook here yet. Run \`deskbook init\` to start one at\n  ${ROOT}`);
+	process.exit(1);
+}
 
 const [cmd, arg] = process.argv.slice(2);
-if (cmd === 'shim') shim(arg);
-else if (cmd === 'init') {
+const name = cmd || 'index';
+if (!COMMANDS.includes(name)) {
+	console.error(`unknown command: ${cmd}\n${USAGE}`);
+	process.exit(1);
+}
+if (name !== 'shim' && name !== 'init') requireInit();
+
+if (name === 'shim') shim(arg);
+else if (name === 'init') {
+	scaffold();
 	const dst = join(ROOT, 'RULES.md');
 	if (existsSync(dst)) console.log(`  RULES.md already present at ${dst}`);
 	else {
 		writeFileSync(dst, readFileSync(join(HERE, 'RULES.template.md'), 'utf8'));
 		console.log(`  deskbook ready at ${ROOT}`);
 	}
-} else if (cmd === 'new') create(arg);
-else if (cmd === 'rm') remove(arg, process.argv.includes('--purge'));
-else if (cmd === 'brief') brief(arg, process.argv.includes('--short'));
-else if (cmd === 'adopt') adopt(process.argv.slice(3));
-else if (cmd === 'serve') await serve(arg, process.argv.includes('--open'));
-else if (cmd === 'worktree') worktreeRemove(process.argv[4] || arg);
-else if (cmd === 'cleanup') cleanup(arg === '--apply');
-else if (cmd === 'index' || !cmd) {
+} else if (name === 'new') create(arg);
+else if (name === 'rm') remove(arg, process.argv.includes('--purge'));
+else if (name === 'brief') brief(arg, process.argv.includes('--short'));
+else if (name === 'adopt') adopt(process.argv.slice(3));
+else if (name === 'serve') await serve(arg, process.argv.includes('--open'));
+else if (name === 'worktree') worktreeRemove(process.argv[4] || arg);
+else if (name === 'cleanup') cleanup(arg === '--apply');
+else {
 	const data = gather();
 	const counts = writeIndex(data);
 	const html = renderDashboard(data);
@@ -840,15 +866,13 @@ else if (cmd === 'index' || !cmd) {
 	console.log(`  INDEX.md + dashboard.html written — ${counts.active} active, ${counts.total} in work, ${counts.reference} reference, ${counts.archive} archived`);
 	// A page that throws renders blank with no other symptom, so prove it renders.
 	try {
-		execSync(`node ${JSON.stringify(join(HERE, 'verify-page.mjs'))} ${JSON.stringify(out)}`, { stdio: ['ignore', 'pipe', 'pipe'] });
+		const bare = counts.total + counts.reference + counts.archive === 0 ? ' --empty' : '';
+		execSync(`node ${JSON.stringify(join(HERE, 'verify-page.mjs'))} ${JSON.stringify(out)}${bare}`, { stdio: ['ignore', 'pipe', 'pipe'] });
 	} catch (e) {
 		const detail = [e.stdout, e.stderr].filter(Boolean).map(String).join('').trim();
 		console.error(`\n  !! dashboard.html does not render:\n${detail.replace(/^/gm, '  ')}`);
 		process.exitCode = 1;
 	}
-} else {
-	console.error(`unknown command: ${cmd}\n  deskbook shim [dir] | init | adopt | [index] | new <slug> | brief <slug> [--short]\n  deskbook rm <slug> [--purge] | worktree rm <branch> | serve [port] [--open] | cleanup [--apply]`);
-	process.exit(1);
 }
 
 function renderDashboard(data, live = false) {

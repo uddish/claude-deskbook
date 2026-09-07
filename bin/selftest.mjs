@@ -48,7 +48,28 @@ const expect = (name, fn, needle) =>
     return out;
   });
 
+// These run before `init` on purpose. A repository nobody initialised must come
+// back untouched, so the session hook can stay silent in it.
+const untouched = () => {
+  if (existsSync(join(config, 'projects'))) throw new Error('a notes root was created before init');
+};
+const refuses = (name, args) =>
+  check(name, () => {
+    let stderr = null;
+    try { run(args); } catch (e) { stderr = String(e.stderr || ''); }
+    if (stderr === null) throw new Error('should have exited non-zero');
+    if (!stderr.includes('deskbook init')) {
+      throw new Error(`expected a nudge to init, got: ${stderr.trim().split('\n')[0]}`);
+    }
+    untouched();
+    return stderr;
+  });
+
+refuses('index refuses before init', ['index']);
+refuses('new refuses before init', ['new', 'too-early']);
+
 expect('init', () => run(['init']), 'deskbook ready');
+expect('index on an empty notebook', () => run(['index']), 'dashboard.html written');
 expect('adopt (scan)', () => run(['adopt']), 'widget-plan.md');
 expect('adopt --json', () => run(['adopt', '--json']), '"why"');
 expect('adopt --take', () => run(['adopt', '--take', 'notes/widget-plan.md']), 'adopted work/widget-plan.md');

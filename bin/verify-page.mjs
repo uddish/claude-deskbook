@@ -38,12 +38,16 @@ if (!main || !main.innerHTML) { console.error('BLANK: #main received no content'
 const rail = nodes.get('rail');
 if (!rail || !rail.innerHTML) { console.error('BLANK: #rail received no content'); process.exit(1); }
 
-const checks = [
-  ['item title rendered', /class="name"/.test(main.innerHTML)],
-  ['action bar rendered', /Copy context/.test(main.innerHTML)],
-  ['note body rendered', /class="md"|class="sheet"/.test(main.innerHTML)],
-  ['sidebar has items', /class="pick"/.test(rail.innerHTML)],
-];
+// A notebook with no notes still has to render, so assert its empty state instead
+// of item markup it cannot have. The caller knows the count and passes --empty.
+const checks = process.argv.includes('--empty')
+  ? [['empty state rendered', /class="hint"/.test(main.innerHTML)]]
+  : [
+      ['item title rendered', /class="name"/.test(main.innerHTML)],
+      ['action bar rendered', /Copy context/.test(main.innerHTML)],
+      ['note body rendered', /class="md"|class="sheet"/.test(main.innerHTML)],
+      ['sidebar has items', /class="pick"/.test(rail.innerHTML)],
+    ];
 let bad = 0;
 for (const [name, ok] of checks) { console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${name}`); if (!ok) bad++; }
 console.log(`  #main ${main.innerHTML.length} chars, #rail ${rail.innerHTML.length} chars`);
