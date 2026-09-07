@@ -522,7 +522,6 @@ function actionBar(it) {
     '<button class="btn" id="copypath" data-path="' + esc(notes) + '" title="Copy ' + esc(notes) + '">copy path</button>' +
     live +
     '<span class="spacer"></span>' +
-    '<button class="linkish" id="briefshort">outline only \u00b7 ' + size(true) + '</button>' +
     '<span class="said" id="said"></span>' +
     '</div>'
   );
@@ -565,8 +564,6 @@ function wireActions() {
     copyTo(brief, t, 'copied ' + Math.round(t.length / 1024) + ' KB');
   });
 
-  const outline = document.getElementById('briefshort');
-  if (outline && it) outline.addEventListener('click', () => copyTo(outline, briefText(it, true), 'outline copied'));
 
   const copypath = document.getElementById('copypath');
   if (copypath) copypath.addEventListener('click', () => copyTo(copypath, copypath.dataset.path, 'path copied'));

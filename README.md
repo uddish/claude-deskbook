@@ -206,8 +206,8 @@ context without needing to read this disk.
     deskbook brief api-85 --short    # outline only, for a quick catch-up
     deskbook brief API-207           # a tracker key works too
 
-The dashboard has the same thing as **copy brief** and **copy outline** buttons,
-which is the fastest route when you already have the page open.
+The dashboard's **Copy context** button is the same thing, and the fastest route
+when you already have the page open.
 
 A cloud agent cannot see your notes directory, so paths alone will not do. The
 brief embeds the content for that reason, and still prints the original path at
