@@ -1,6 +1,6 @@
 {
 	"name": "deskbook",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "A place for work notes that does not grow into a mess. One file per task, a fixed layout, a generated index and dashboard, and mechanical cleanup.",
 	"author": {
 		"name": "Uddish Verma"
