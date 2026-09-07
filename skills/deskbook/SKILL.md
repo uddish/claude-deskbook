@@ -125,6 +125,7 @@ The bare `deskbook` command does not exist unless the user has run
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs shim        # optional: a PATH command
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs init
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs where         # the notes root, alone on stdout
+node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs session       # what the session-start hook runs; read-only
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs adopt --json     # find existing notes
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs adopt --take a.md,b.md
 node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs index          # INDEX.md + dashboard.html
@@ -139,6 +140,9 @@ node ${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs cleanup --apply
 
 ### Operating notes
 
+- **The `Deskbook:` block at the top of a session is this plugin's hook.** Its
+  path is where notes go. Trust it over any other memory or guess about a
+  notes location, and never create a notes directory somewhere else.
 - **Arguments.** When the user types `/deskbook <args>`, run the tool with those
   arguments. With none, run `index`.
 - **`serve` runs until stopped.** Start it in the background and give the user

@@ -1,0 +1,16 @@
+{
+	"description": "At session start, print where this project's notes live and what is active. Silent in a repository that has not run `deskbook init`.",
+	"hooks": {
+		"SessionStart": [
+			{
+				"matcher": "startup|resume|clear",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"${CLAUDE_PLUGIN_ROOT}/bin/deskbook.mjs\" session"
+					}
+				]
+			}
+		]
+	}
+}

@@ -111,6 +111,27 @@ Every mutating route needs an `X-Deskbook` header, which a cross-site request
 cannot set without a preflight it will fail, and every path is checked against a
 set the server builds itself from `git worktree list`.
 
+## What happens when a session starts
+
+In a repository where you ran `init`, every new Claude Code session begins with
+a short block — the notes path, up to five active items, and the counts:
+
+```
+Deskbook: /Users/you/.claude/projects/-Users-you-repo/notes
+Active:
+  API-85   Executions schema-first migration   work/api-85-executions/  2026-09-04
+  API-207  Migrate the retry endpoint          work/api-207-retry.md    2026-09-02
+2 parked, 7 archived. Rules: RULES.md
+```
+
+So Claude knows where notes live before you say anything, and a plan you ask
+for lands in `work/` instead of a directory it invents.
+
+**It reads and prints. It writes nothing.** In a repository where you never ran
+`init` it prints nothing and exits 0, so it is silent everywhere you did not opt
+in. It takes about 20 ms. The hook is `hooks/hooks.json`; the command it runs is
+`deskbook session`, which you can run by hand.
+
 ## Where notes go
 
 1. `$DESKBOOK_HOME` if set
@@ -159,6 +180,7 @@ notes/
 | `deskbook shim [dir]` | install a `deskbook` command on your PATH |
 | `deskbook init` | create the layout and install `RULES.md` |
 | `deskbook where` | print the notes root; works before `init` too |
+| `deskbook session` | what the session-start hook runs: the root, active items, counts. Read-only |
 | `deskbook index` | rewrite `INDEX.md` and `dashboard.html` |
 | `deskbook new <slug>` | create a task file with front matter |
 | `deskbook adopt [--all]` | find existing notes; `--take a.md,b.md` brings them in |

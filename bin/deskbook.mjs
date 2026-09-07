@@ -841,6 +841,44 @@ function reindex() {
 }
 
 /**
+ * The session-start hook. It runs on every session in every repository, so it is silent
+ * where nobody ran `init`, it only reads, and it never fails: any error exits 0 with
+ * nothing on stdout, because a broken notebook must not break a terminal.
+ */
+function session() {
+	try {
+		if (!existsSync(join(ROOT, 'RULES.md'))) return;
+		const work = collect('work');
+		const active = work.filter((i) => i.status === 'active').sort((a, b) => b.mtime - a.mtime);
+		const n = (s) => work.filter((i) => i.status === s).length;
+		const lines = [`Deskbook: ${ROOT}`];
+		if (active.length) {
+			lines.push('Active:');
+			const shown = active.slice(0, 5);
+			const idW = Math.max(...shown.map((i) => (i.id || '').length));
+			const titleW = Math.max(...shown.map((i) => i.title.length));
+			for (const i of shown) {
+				const where = i.isDir ? `work/${i.slug}/` : `work/${i.slug}.md`;
+				const cells = [idW ? (i.id || '').padEnd(idW) : null, i.title.padEnd(titleW), where, i.updated];
+				lines.push('  ' + cells.filter((c) => c !== null).join('  '));
+			}
+			if (active.length > 5) lines.push(`  … and ${active.length - 5} more`);
+		} else lines.push('No active items.');
+		// A count only, so do not read every archived file the way collect() would.
+		let archived = 0;
+		try {
+			archived = readdirSync(join(ROOT, 'archive')).filter((f) => !f.startsWith('.') && (f.endsWith('.md') || statSync(join(ROOT, 'archive', f)).isDirectory())).length;
+		} catch { /* no archive yet */ }
+		const tail = [];
+		if (n('blocked')) tail.push(`${n('blocked')} blocked`);
+		if (n('parked')) tail.push(`${n('parked')} parked`);
+		tail.push(`${archived} archived`);
+		lines.push(`${tail.join(', ')}. Rules: RULES.md`);
+		console.log(lines.join('\n'));
+	} catch { /* a hook must never fail a session */ }
+}
+
+/**
  * The notes root sits outside the repository, which makes it easy to lose. The path is
  * the only thing on stdout, so `cd "$(deskbook where)"` works; hints go to stderr.
  */
@@ -853,11 +891,11 @@ function where() {
 	console.error('  `deskbook serve --open` opens the dashboard, where every action works');
 }
 
-const USAGE = `  deskbook shim [dir] | init | where | adopt | [index] | new <slug> | brief <slug> [--short]
+const USAGE = `  deskbook shim [dir] | init | where | session | adopt | [index] | new <slug> | brief <slug> [--short]
   deskbook rm <slug> [--purge] | worktree rm <branch> | serve [port] [--open] | cleanup [--apply]`;
-const COMMANDS = ['shim', 'init', 'where', 'adopt', 'index', 'new', 'brief', 'rm', 'worktree', 'serve', 'cleanup'];
-/** These three answer without a notebook. Everything else refuses until `init`. */
-const NO_INIT = new Set(['shim', 'init', 'where']);
+const COMMANDS = ['shim', 'init', 'where', 'session', 'adopt', 'index', 'new', 'brief', 'rm', 'worktree', 'serve', 'cleanup'];
+/** These answer without a notebook. `session` checks for itself and stays silent. Everything else refuses until `init`. */
+const NO_INIT = new Set(['shim', 'init', 'where', 'session']);
 
 /** The four areas exist because `init` made them, never as a side effect of another command. */
 function scaffold() {
@@ -893,6 +931,7 @@ else if (name === 'init') {
 		console.log(`  deskbook ready at ${ROOT}`);
 	}
 } else if (name === 'where') where();
+else if (name === 'session') session();
 else if (name === 'new') create(arg);
 else if (name === 'rm') remove(arg, process.argv.includes('--purge'));
 else if (name === 'brief') brief(arg, process.argv.includes('--short'));

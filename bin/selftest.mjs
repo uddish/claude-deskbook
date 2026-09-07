@@ -48,6 +48,8 @@ const expect = (name, fn, needle) =>
     return out;
   });
 
+const notesDir = () => join(config, 'projects', readdirSync(join(config, 'projects'))[0], 'notes');
+
 // These run before `init` on purpose. A repository nobody initialised must come
 // back untouched, so the session hook can stay silent in it.
 const untouched = () => {
@@ -68,6 +70,13 @@ const refuses = (name, args) =>
 refuses('index refuses before init', ['index']);
 refuses('new refuses before init', ['new', 'too-early']);
 
+check('session is silent before init, exits 0, and writes nothing', () => {
+  const out = run(['session']);
+  if (out.trim() !== '') throw new Error(`expected no output, got: ${out.trim().slice(0, 80)}`);
+  untouched();
+  return 'ok';
+});
+
 check('where answers before init, and writes nothing', () => {
   const out = run(['where']);
   if (!out.trim().endsWith('notes')) throw new Error(`expected a notes path, got: ${out.trim()}`);
@@ -76,6 +85,12 @@ check('where answers before init, and writes nothing', () => {
 });
 
 expect('init', () => run(['init']), 'deskbook ready');
+check('session reads only: prints the root, writes no INDEX.md', () => {
+  const out = run(['session']);
+  if (!out.includes('Deskbook:')) throw new Error(`expected the notes path line, got: ${out.slice(0, 80)}`);
+  if (existsSync(join(notesDir(), 'INDEX.md'))) throw new Error('session wrote INDEX.md');
+  return out;
+});
 expect('index on an empty notebook', () => run(['index']), 'dashboard.html written');
 expect('where', () => run(['where']), 'notes');
 expect('adopt (scan)', () => run(['adopt']), 'widget-plan.md');
@@ -83,7 +98,6 @@ expect('adopt --json', () => run(['adopt', '--json']), '"why"');
 expect('adopt --take', () => run(['adopt', '--take', 'notes/widget-plan.md']), 'adopted work/widget-plan.md');
 expect('new', () => run(['new', 'a-task']), 'created work/a-task.md');
 
-const notesDir = () => join(config, 'projects', readdirSync(join(config, 'projects'))[0], 'notes');
 
 check('new writes the index', () => {
   run(['new', 'indexed-by-new']);
@@ -91,6 +105,8 @@ check('new writes the index', () => {
   if (!idx.includes('indexed-by-new')) throw new Error('INDEX.md does not list the item new just created');
   return 'ok';
 });
+
+expect('session lists active items', () => run(['session']), 'work/indexed-by-new.md');
 
 check('new refuses a duplicate slug without a stack trace', () => {
   let stderr = null;
@@ -124,6 +140,16 @@ check('unknown command exits non-zero', () => {
     return 'ok';
   }
   throw new Error('should have failed');
+});
+
+check('hooks.json registers SessionStart -> deskbook session', () => {
+  const hooks = JSON.parse(readFileSync(join(dirname(CLI), '..', 'hooks', 'hooks.json'), 'utf8'));
+  const entries = hooks.hooks?.SessionStart;
+  if (!Array.isArray(entries) || !entries.length) throw new Error('no SessionStart entry');
+  const cmd = entries[0].hooks?.[0]?.command || '';
+  if (!/deskbook\.mjs" session$/.test(cmd)) throw new Error(`command does not run session: ${cmd}`);
+  if (!cmd.includes('${CLAUDE_PLUGIN_ROOT}')) throw new Error('command must resolve the plugin root, not hardcode a path');
+  return 'ok';
 });
 
 check('dashboard.html renders', () => {
