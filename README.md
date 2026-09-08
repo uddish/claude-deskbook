@@ -27,11 +27,11 @@ index, and makes cleanup mechanical.
 
 ## Install
 
-```bash
-git clone https://github.com/uddish/claude-deskbook
-claude
-> /plugin marketplace add ./claude-deskbook
-> /plugin install deskbook
+Inside Claude Code:
+
+```
+/plugin marketplace add uddish/claude-deskbook
+/plugin install deskbook@deskbook
 ```
 
 ## 60-second start
