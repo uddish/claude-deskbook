@@ -967,7 +967,9 @@ function renderDashboard(data, live = false) {
 	const template = readFileSync(join(HERE, 'dashboard.template.html'), 'utf8');
 	const generated = new Date().toISOString().slice(0, 10);
 	return template
-		// `</script>` inside a note would end the script block early, so neutralise it.
-		.replace('/*__DATA__*/null', JSON.stringify({ ...data, generated, live }).replace(/<\//g, '<\\/'))
+		// `</script>` inside a note would end the script block early, so neutralise it. The
+		// replacement is a function because a string one treats `$'`, `` $` `` and `$&` as
+		// patterns and splices the template into the data.
+		.replace('/*__DATA__*/null', () => JSON.stringify({ ...data, generated, live }).replace(/<\//g, '<\\/'))
 		.replace(/__GENERATED__/g, generated);
 }

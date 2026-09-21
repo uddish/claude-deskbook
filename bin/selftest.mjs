@@ -135,6 +135,20 @@ links:
   return out;
 });
 
+// `$'`, `` $` `` and `$&` are special to String.replace with a string replacement:
+// they splice the template around the match into the data and break the page's script.
+check('index survives $ patterns in a note', () => {
+  writeFileSync(join(notesDir(), 'work', 'dollar.md'), `---
+title: Dollar signs
+status: active
+---
+# Dollar signs
+
+A regex that ends a line: r'^\\S+$' and the odd shell forms $\` and $& and "$'" too.
+`);
+  return run(['index']);
+});
+
 // A branch's review joins the item's links through the same path as a hand-written
 // link. `gh` is stubbed on PATH so the test needs no network and no login.
 check('a branch\'s pull request joins the links, once, with its state', () => {
